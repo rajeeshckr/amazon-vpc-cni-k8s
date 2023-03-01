@@ -28,6 +28,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/vishvananda/netlink"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -459,16 +460,23 @@ func getDummyENIMetadataWithV6Prefix() awsutils.ENIMetadata {
 
 func TestIncreaseIPPoolDefault(t *testing.T) {
 	_ = os.Unsetenv(envCustomNetworkCfg)
-	testIncreaseIPPool(t, false)
+	testIncreaseIPPool(t, false, false)
 }
 
 func TestIncreaseIPPoolCustomENI(t *testing.T) {
 	_ = os.Setenv(envCustomNetworkCfg, "true")
 	_ = os.Setenv("MY_NODE_NAME", myNodeName)
-	testIncreaseIPPool(t, true)
+	testIncreaseIPPool(t, true, false)
 }
 
-func testIncreaseIPPool(t *testing.T, useENIConfig bool) {
+func TestIncreaseIPPoolCustomENIOnNonSchedulableNode(t *testing.T) {
+	_ = os.Setenv(envCustomNetworkCfg, "true")
+	_ = os.Setenv(envManageENIsOnNonSchedulableNode, "true")
+	_ = os.Setenv("MY_NODE_NAME", myNodeName)
+	testIncreaseIPPool(t, true, true)
+}
+
+func testIncreaseIPPool(t *testing.T, useENIConfig bool, unschedulabeNode bool) {
 	m := setup(t)
 	defer m.ctrl.Finish()
 	ctx := context.Background()
@@ -562,6 +570,13 @@ func testIncreaseIPPool(t *testing.T, useENIConfig bool) {
 			Spec:       v1.NodeSpec{},
 			Status:     v1.NodeStatus{},
 		}
+		if unschedulabeNode {
+			fakeNode.Spec.Taints = append(fakeNode.Spec.Taints, corev1.Taint{
+				Key:    "node.kubernetes.io/unschedulable",
+				Effect: corev1.TaintEffectNoSchedule,
+			})
+		}
+
 		_ = m.cachedK8SClient.Create(ctx, &fakeNode)
 
 		//Create a dummy ENIConfig
