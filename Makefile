@@ -114,20 +114,20 @@ dist: all
 BUILD_MODE ?= -buildmode=pie
 build-linux: BUILD_FLAGS = $(BUILD_MODE) -ldflags '-s -w $(LDFLAGS)'
 build-linux:    ## Build the VPC CNI plugin agent using the host's Go toolchain.
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-k8s-agent     ./cmd/aws-k8s-agent
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-cni           ./cmd/routed-eni-cni-plugin
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o grpc-health-probe ./cmd/grpc-health-probe
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o egress-v4-cni     ./cmd/egress-v4-cni-plugin
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-k8s-agent     ./cmd/aws-k8s-agent
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-cni           ./cmd/routed-eni-cni-plugin
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o grpc-health-probe ./cmd/grpc-health-probe
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o egress-v4-cni     ./cmd/egress-v4-cni-plugin
 
 # Build VPC CNI init container entrypoint
 build-aws-vpc-cni-init: BUILD_FLAGS = $(BUILD_MODE) -ldflags '-s -w $(LDFLAGS)'
 build-aws-vpc-cni-init:    ## Build the VPC CNI init container using the host's Go toolchain.
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-vpc-cni-init     ./cmd/aws-vpc-cni-init
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-vpc-cni-init     ./cmd/aws-vpc-cni-init
 
 # Build VPC CNI container entrypoint
 build-aws-vpc-cni: BUILD_FLAGS = $(BUILD_MODE) -ldflags '-s -w $(LDFLAGS)'
 build-aws-vpc-cni:    ## Build the VPC CNI container using the host's Go toolchain.
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-vpc-cni     ./cmd/aws-vpc-cni
+	go build $(VENDOR_OVERRIDE_FLAG) $(BUILD_FLAGS) -o aws-vpc-cni     ./cmd/aws-vpc-cni
 
 # Build VPC CNI plugin & agent container image.
 docker:	setup-ec2-sdk-override	   ## Build VPC CNI plugin & agent container image.
@@ -189,20 +189,20 @@ multi-arch-cni-init-build-push:
 # Run unit tests
 unit-test: export AWS_VPC_K8S_CNI_LOG_FILE=stdout
 unit-test:    ## Run unit tests
-	go1.18 test -v $(VENDOR_OVERRIDE_FLAG) -coverprofile=coverage.txt -covermode=atomic ./pkg/...
+	go test -v $(VENDOR_OVERRIDE_FLAG) -coverprofile=coverage.txt -covermode=atomic ./pkg/...
 
 # Run unit tests with race detection (can only be run natively)
 unit-test-race: export AWS_VPC_K8S_CNI_LOG_FILE=stdout
 unit-test-race: CGO_ENABLED=1
 unit-test-race: GOARCH=
 unit-test-race:     ## Run unit tests with race detection (can only be run natively)
-	go1.18 test -v -cover -race -timeout 10s  ./cmd/...
-	go1.18 test -v -cover -race -timeout 150s ./pkg/awsutils/...
-	go1.18 test -v -cover -race -timeout 10s  ./pkg/k8sapi/...
-	go1.18 test -v -cover -race -timeout 10s  ./pkg/networkutils/...
-	go1.18 test -v -cover -race -timeout 10s  ./pkg/utils/...
-	go1.18 test -v -cover -race -timeout 10s  ./pkg/eniconfig/...
-	go1.18 test -v -cover -race -timeout 10s  ./pkg/ipamd/...
+	go test -v -cover -race -timeout 10s  ./cmd/...
+	go test -v -cover -race -timeout 150s ./pkg/awsutils/...
+	go test -v -cover -race -timeout 10s  ./pkg/k8sapi/...
+	go test -v -cover -race -timeout 10s  ./pkg/networkutils/...
+	go test -v -cover -race -timeout 10s  ./pkg/utils/...
+	go test -v -cover -race -timeout 10s  ./pkg/eniconfig/...
+	go test -v -cover -race -timeout 10s  ./pkg/ipamd/...
 
 ##@ Build and Run Unit Tests 
 # Build the unit test driver container image.
@@ -221,14 +221,14 @@ docker-unit-tests: build-docker-test     ## Run unit tests inside of the testing
 ##@ Build the Test Binaries files in /test
 build-test-binaries:
 	mkdir -p ${MAKEFILE_PATH}test/build
-	find ${MAKEFILE_PATH}test/ -name '*suite_test.go' -type f  | xargs dirname  | xargs ginkgo1.18 build
+	find ${MAKEFILE_PATH}test/ -name '*suite_test.go' -type f  | xargs dirname  | xargs ginkgo build
 	find ${MAKEFILE_PATH}test/ -name "*.test" -print0 | xargs -0 -I {} mv {} ${MAKEFILE_PATH}test/build
 
 ##@ Build metrics helper agent 
 
 # Build metrics helper agent.
 build-metrics:     ## Build metrics helper agent.
-	go1.18 build $(VENDOR_OVERRIDE_FLAG) -ldflags="-s -w" -o cni-metrics-helper ./cmd/cni-metrics-helper
+	go build $(VENDOR_OVERRIDE_FLAG) -ldflags="-s -w" -o cni-metrics-helper ./cmd/cni-metrics-helper
 
 # Build metrics helper agent Docker image.
 docker-metrics:    ## Build metrics helper agent Docker image.
@@ -244,7 +244,7 @@ docker-metrics:    ## Build metrics helper agent Docker image.
 metrics-unit-test: CGO_ENABLED=1
 metrics-unit-test: GOARCH=
 metrics-unit-test:       ## Run metrics helper unit test suite (must be run natively).
-	go1.18 test -v $(VENDOR_OVERRIDE_FLAG) -cover -race -timeout 10s \
+	go test -v $(VENDOR_OVERRIDE_FLAG) -cover -race -timeout 10s \
 		./cmd/cni-metrics-helper/metrics/...
 
 # Run metrics helper unit test suite in a container.
