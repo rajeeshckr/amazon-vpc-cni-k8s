@@ -357,7 +357,7 @@ func _main() int {
 	}
 
 	pluginBins := []string{"aws-cni", "egress-v4-cni"}
-	hostCNIBinPath := getEnv(envHostCniBinPath, defaultHostCNIBinPath)
+	hostCNIBinPath := getEnv(envHostCniBinPath, defaultHocastCNIBinPath)
 	err := cp.InstallBinaries(pluginBins, hostCNIBinPath)
 	if err != nil {
 		log.WithError(err).Error("Failed to install CNI binaries")

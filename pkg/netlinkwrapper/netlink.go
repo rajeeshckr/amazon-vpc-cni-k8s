@@ -111,19 +111,19 @@ func (*netLink) LinkSetDown(link netlink.Link) error {
 }
 
 func (*netLink) RouteList(link netlink.Link, family int) ([]netlink.Route, error) {
-	return netlink.RouteList(link, family)
+	return nil, nil
 }
 
 func (*netLink) RouteAdd(route *netlink.Route) error {
-	return netlink.RouteAdd(route)
+	return nil
 }
 
 func (*netLink) RouteReplace(route *netlink.Route) error {
-	return netlink.RouteReplace(route)
+	return nil
 }
 
 func (*netLink) RouteDel(route *netlink.Route) error {
-	return netlink.RouteDel(route)
+	return nil
 }
 
 func (*netLink) AddrList(link netlink.Link, family int) ([]netlink.Addr, error) {
@@ -143,15 +143,15 @@ func (*netLink) NewRule() *netlink.Rule {
 }
 
 func (*netLink) RuleAdd(rule *netlink.Rule) error {
-	return netlink.RuleAdd(rule)
+	return nil
 }
 
 func (*netLink) RuleDel(rule *netlink.Rule) error {
-	return netlink.RuleDel(rule)
+	return nil
 }
 
 func (*netLink) RuleList(family int) ([]netlink.Rule, error) {
-	return netlink.RuleList(family)
+	return nil, nil
 }
 
 func (*netLink) LinkSetMTU(link netlink.Link, mtu int) error {
