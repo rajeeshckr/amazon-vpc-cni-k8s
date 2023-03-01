@@ -474,16 +474,17 @@ func testIncreaseIPPool(t *testing.T, useENIConfig bool) {
 	ctx := context.Background()
 
 	mockContext := &IPAMContext{
-		awsClient:           m.awsutils,
-		rawK8SClient:        m.rawK8SClient,
-		cachedK8SClient:     m.cachedK8SClient,
-		maxIPsPerENI:        14,
-		maxENI:              4,
-		warmENITarget:       1,
-		networkClient:       m.network,
-		useCustomNetworking: UseCustomNetworkCfg(),
-		primaryIP:           make(map[string]string),
-		terminating:         int32(0),
+		awsClient:                      m.awsutils,
+		rawK8SClient:                   m.rawK8SClient,
+		cachedK8SClient:                m.cachedK8SClient,
+		maxIPsPerENI:                   14,
+		maxENI:                         4,
+		warmENITarget:                  1,
+		networkClient:                  m.network,
+		useCustomNetworking:            UseCustomNetworkCfg(),
+		manageENIsOnNonSchedulableNode: ManageENIsOnNonSchedulableNode(),
+		primaryIP:                      make(map[string]string),
+		terminating:                    int32(0),
 	}
 
 	mockContext.dataStore = testDatastore()
@@ -595,19 +596,20 @@ func testIncreasePrefixPool(t *testing.T, useENIConfig bool) {
 	ctx := context.Background()
 
 	mockContext := &IPAMContext{
-		awsClient:              m.awsutils,
-		rawK8SClient:           m.rawK8SClient,
-		cachedK8SClient:        m.cachedK8SClient,
-		maxIPsPerENI:           256,
-		maxPrefixesPerENI:      16,
-		maxENI:                 4,
-		warmENITarget:          1,
-		warmPrefixTarget:       1,
-		networkClient:          m.network,
-		useCustomNetworking:    UseCustomNetworkCfg(),
-		primaryIP:              make(map[string]string),
-		terminating:            int32(0),
-		enablePrefixDelegation: true,
+		awsClient:                      m.awsutils,
+		rawK8SClient:                   m.rawK8SClient,
+		cachedK8SClient:                m.cachedK8SClient,
+		maxIPsPerENI:                   256,
+		maxPrefixesPerENI:              16,
+		maxENI:                         4,
+		warmENITarget:                  1,
+		warmPrefixTarget:               1,
+		networkClient:                  m.network,
+		useCustomNetworking:            UseCustomNetworkCfg(),
+		manageENIsOnNonSchedulableNode: ManageENIsOnNonSchedulableNode(),
+		primaryIP:                      make(map[string]string),
+		terminating:                    int32(0),
+		enablePrefixDelegation:         true,
 	}
 
 	mockContext.dataStore = testDatastorewithPrefix()
