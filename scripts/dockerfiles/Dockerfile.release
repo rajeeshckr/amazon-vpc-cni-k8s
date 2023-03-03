@@ -1,7 +1,7 @@
 ARG golang_image
 
 FROM $golang_image as builder
-WORKDIR /app
+WORKDIR /go/src/github.com/aws/amazon-vpc-cni-k8s
 ARG TARGETARCH
 # Configure build with Go modules
 ENV GO111MODULE=on
@@ -14,5 +14,17 @@ RUN go mod download
 COPY Makefile ./
 COPY . ./
 RUN make build-aws-vpc-cni && make build-linux
+
+# Build from EKS minimal base + iptables
+FROM public.ecr.aws/eks-distro-build-tooling/eks-distro-minimal-base-iptables:latest.2
+
+WORKDIR /app
+
+COPY --from=builder /go/src/github.com/aws/amazon-vpc-cni-k8s/aws-cni \
+    /go/src/github.com/aws/amazon-vpc-cni-k8s/misc/10-aws.conflist \
+    /go/src/github.com/aws/amazon-vpc-cni-k8s/aws-k8s-agent \
+    /go/src/github.com/aws/amazon-vpc-cni-k8s/grpc-health-probe \
+    /go/src/github.com/aws/amazon-vpc-cni-k8s/egress-v4-cni \
+    /go/src/github.com/aws/amazon-vpc-cni-k8s/aws-vpc-cni /app/
 
 ENTRYPOINT ["/app/aws-vpc-cni"]

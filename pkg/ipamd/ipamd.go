@@ -1318,7 +1318,7 @@ func (c *IPAMContext) askForTrunkENIIfNeeded(ctx context.Context, labels map[str
 		log.Debug("VPC CNI is asking RC to initialize trunk interface")
 		err = c.eventRecorder.SendNodeEvent(corev1.EventTypeNormal, eventrecorder.EventReason, sgpp.VpcCNINodeEventActionForTrunk, sgpp.TrunkEventNote)
 		if err != nil {
-			log.Error(fmt.Sprintf("Failed sending a node event to VPC RC for enabling trunk interface, Error is %v", err))
+			log.Error("Failed sending a node event to VPC RC for enabling trunk interface")
 		}
 	}
 
