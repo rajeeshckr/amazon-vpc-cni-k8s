@@ -110,6 +110,8 @@ const (
 	// When it is NOT set or set to false, ipamd will use primary interface security group and subnet for Pod network.
 	envCustomNetworkCfg = "AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG"
 
+	envManageENIsOnNonSchedulableNode = "AWS_VPC_K8S_CNI_MANAGE_ENIS_ON_NON_SCHEDULABLE_NODE"
+
 	// eniNoManageTagKey is the tag that may be set on an ENI to indicate ipamd
 	// should not manage it in any form.
 	eniNoManageTagKey = "node.k8s.amazonaws.com/no_manage"
@@ -231,25 +233,26 @@ var (
 
 // IPAMContext contains node level control information
 type IPAMContext struct {
-	awsClient            awsutils.APIs
-	dataStore            *datastore.DataStore
-	rawK8SClient         client.Client
-	cachedK8SClient      client.Client
-	enableIPv4           bool
-	enableIPv6           bool
-	useCustomNetworking  bool
-	networkClient        networkutils.NetworkAPIs
-	maxIPsPerENI         int
-	maxENI               int
-	maxPrefixesPerENI    int
-	unmanagedENI         int
-	warmENITarget        int
-	warmIPTarget         int
-	minimumIPTarget      int
-	warmPrefixTarget     int
-	primaryIP            map[string]string // primaryIP is a map from ENI ID to primary IP of that ENI
-	lastNodeIPPoolAction time.Time
-	lastDecreaseIPPool   time.Time
+	awsClient                      awsutils.APIs
+	dataStore                      *datastore.DataStore
+	rawK8SClient                   client.Client
+	cachedK8SClient                client.Client
+	enableIPv4                     bool
+	enableIPv6                     bool
+	useCustomNetworking            bool
+	manageENIsOnNonSchedulableNode bool
+	networkClient                  networkutils.NetworkAPIs
+	maxIPsPerENI                   int
+	maxENI                         int
+	maxPrefixesPerENI              int
+	unmanagedENI                   int
+	warmENITarget                  int
+	warmIPTarget                   int
+	minimumIPTarget                int
+	warmPrefixTarget               int
+	primaryIP                      map[string]string // primaryIP is a map from ENI ID to primary IP of that ENI
+	lastNodeIPPoolAction           time.Time
+	lastDecreaseIPPool             time.Time
 	// reconcileCooldownCache keeps timestamps of the last time an IP address was unassigned from an ENI,
 	// so that we don't reconcile and add it back too quickly if IMDS lags behind reality.
 	reconcileCooldownCache    ReconcileCooldownCache
@@ -370,6 +373,7 @@ func New(rawK8SClient client.Client, cachedK8SClient client.Client) (*IPAMContex
 	c.cachedK8SClient = cachedK8SClient
 	c.networkClient = networkutils.New()
 	c.useCustomNetworking = UseCustomNetworkCfg()
+	c.manageENIsOnNonSchedulableNode = ManageENIsOnNonSchedulableNode()
 	c.enablePrefixDelegation = usePrefixDelegation()
 	c.enableIPv4 = isIPv4Enabled()
 	c.enableIPv6 = isIPv6Enabled()
@@ -690,8 +694,13 @@ func (c *IPAMContext) decreaseDatastorePool(interval time.Duration) {
 
 // tryFreeENI always tries to free one ENI
 func (c *IPAMContext) tryFreeENI() {
-	if c.isTerminating() || c.isNodeNonSchedulable() {
+	if c.isTerminating() {
 		log.Debug("AWS CNI is terminating, not detaching any ENIs")
+		return
+	}
+
+	if !c.manageENIsOnNonSchedulableNode && c.isNodeNonSchedulable() {
+		log.Debug("AWS CNI is on a non schedulable node, not detaching any ENIs")
 		return
 	}
 
@@ -779,10 +788,15 @@ func (c *IPAMContext) increaseDatastorePool(ctx context.Context) {
 		}
 	}
 
-	if c.isTerminating() || c.isNodeNonSchedulable() {
+	if c.isTerminating() {
 		log.Debug("AWS CNI is terminating, will not try to attach any new IPs or ENIs right now")
 		return
 	}
+	if !c.manageENIsOnNonSchedulableNode && c.isNodeNonSchedulable() {
+		log.Debug("AWS CNI is on a non schedulable node, will not try to attach any new IPs or ENIs right now")
+		return
+	}
+
 	// Try to add more Cidrs to existing ENIs first.
 	if c.inInsufficientCidrCoolingPeriod() {
 		log.Debugf("Recently we had InsufficientCidr error hence will wait for %v before retrying", insufficientCidrErrorCooldown)
@@ -1628,14 +1642,23 @@ func (c *IPAMContext) verifyAndAddPrefixesToDatastore(eni string, attachedENIPre
 
 // UseCustomNetworkCfg returns whether Pods needs to use pod specific configuration or not.
 func UseCustomNetworkCfg() bool {
-	if strValue := os.Getenv(envCustomNetworkCfg); strValue != "" {
+	return parseBoolEnvVar(envCustomNetworkCfg, false)
+}
+
+// ManageENIsOnNonSchedulableNode returns whether IPAMd should manage ENIs on the node or not.
+func ManageENIsOnNonSchedulableNode() bool {
+	return parseBoolEnvVar(envManageENIsOnNonSchedulableNode, false)
+}
+
+func parseBoolEnvVar(envVariableName string, defaultVal bool) bool {
+	if strValue := os.Getenv(envVariableName); strValue != "" {
 		parsedValue, err := strconv.ParseBool(strValue)
 		if err == nil {
 			return parsedValue
 		}
-		log.Warnf("Failed to parse %s; using default: false, err: %v", envCustomNetworkCfg, err)
+		log.Warnf("Failed to parse %s; using default: %v, err: %v", envVariableName, defaultVal, err)
 	}
-	return false
+	return defaultVal
 }
 
 func dsBackingStorePath() string {
